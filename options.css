@@ -1,0 +1,4 @@
+input:invalid {
+  outline-color: red;
+  border-color: red;
+}

@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Kagi Redirect",
+  "description": "Redirects Google searches to Kagi",
+  "version": "1.0",
+  "permissions": [
+    "storage",
+    "declarativeNetRequestWithHostAccess"
+  ],
+  "host_permissions": [
+    "*://*.google.com/*"
+  ],
+  "options_ui": {
+    "page": "options.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
