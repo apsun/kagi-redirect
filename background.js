@@ -8,7 +8,7 @@ async function getSessionToken() {
   if (!link) {
     return null;
   }
-  const pattern = /https:\/\/kagi.com\/search\?token=([A-Za-z0-9._]+)/;
+  const pattern = /https:\/\/kagi.com\/search\?token=([A-Za-z0-9._-]+)/;
   const match = link.match(pattern);
   if (!match) {
     return null;
