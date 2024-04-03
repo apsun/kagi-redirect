@@ -8,7 +8,9 @@
     "declarativeNetRequestWithHostAccess"
   ],
   "host_permissions": [
-    "*://*.google.com/*"
+    "*://*.google.com/*",
+    "*://*.duckduckgo.com/*",
+    "*://*.kagi.com/*"
   ],
   "options_ui": {
     "page": "options.html"
