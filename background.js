@@ -22,6 +22,10 @@ function getSearchQueryPattern(key) {
 }
 
 function getRedirectRules(sessionLink) {
+  // Disabled because Safari is broken beyond repair when it comes to
+  // handling DNR redirects. We use the webNavigation + tabs API instead.
+  return [];
+
   const substitution = sessionLink ? sessionLink + "&q=\\1" : "https://kagi.com/search?q=\\1";
   return [
     {
@@ -72,14 +76,34 @@ function getAuthRules(sessionLink) {
   }];
 }
 
-async function reload() {
+function getSearchQuery(urlString) {
+  const url = new URL(urlString)
+  if (url.host == "www.google.com" && url.pathname == "/search") {
+    return url.searchParams.get("q");
+  } else if (url.host == "duckduckgo.com" && url.pathname == "/") {
+    return url.searchParams.get("q");
+  } else {
+    return null;
+  }
+}
+
+async function onBeforeNavigate(details) {
+  const q = getSearchQuery(details.url);
+  if (q) {
+    const url = new URL("https://kagi.com/search");
+    url.searchParams.set("q", q);
+    await browser.tabs.update(details.tabId, {
+      url: url.toString(),
+    });
+  }
+}
+
+async function reloadWebRequestRules() {
   const sessionLink = await getSessionLink();
-  console.log(sessionLink);
 
   const oldRules = await browser.declarativeNetRequest.getDynamicRules();
   const rules = getRedirectRules(sessionLink).concat(getAuthRules(sessionLink));
   rules.forEach((rule, index) => rule.id = index + 1);
-  console.log(rules);
 
   await browser.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: oldRules.map(rule => rule.id),
@@ -87,5 +111,6 @@ async function reload() {
   });
 }
 
-browser.runtime.onInstalled.addListener(reload);
-browser.storage.local.onChanged.addListener(reload);
+browser.webNavigation.onBeforeNavigate.addListener(onBeforeNavigate);
+browser.runtime.onInstalled.addListener(reloadWebRequestRules);
+browser.storage.local.onChanged.addListener(reloadWebRequestRules);
