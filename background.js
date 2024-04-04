@@ -2,60 +2,61 @@ if (typeof browser === "undefined") {
   globalThis.browser = chrome;
 }
 
-async function getSessionToken() {
-  const key = "session-link";
-  const link = (await browser.storage.local.get(key))[key];
-  if (!link) {
-    return null;
-  }
+async function getSessionLink() {
+  const storageKey = "session-link";
+  const sessionLink = (await browser.storage.local.get(storageKey))[storageKey];
+  return sessionLink;
+}
+
+function getSessionToken(sessionLink) {
   const pattern = /https:\/\/kagi.com\/search\?token=([A-Za-z0-9._-]+)/;
-  const match = link.match(pattern);
+  const match = sessionLink.match(pattern);
   if (!match) {
     return null;
   }
   return match[1];
 }
 
-function getRedirectRules() {
+function getSearchQueryPattern(key) {
+  return "\\?(?:.*&)?" + key + "=([^&]+)"
+}
+
+function getRedirectRules(sessionLink) {
+  const substitution = sessionLink ? sessionLink + "&q=\\1" : "https://kagi.com/search?q=\\1";
   return [
     {
       condition: {
-        urlFilter: "||google.com/search?",
+        regexFilter: "^https://www.google.com/search" + getSearchQueryPattern("q"),
         resourceTypes: ["main_frame"],
       },
       action: {
         type: "redirect",
         redirect: {
-          transform: {
-            host: "kagi.com",
-          },
+          regexSubstitution: substitution,
         },
       },
     },
     {
       condition: {
-        urlFilter: "||duckduckgo.com/",
+        regexFilter: "^https://duckduckgo.com/" + getSearchQueryPattern("q"),
         resourceTypes: ["main_frame"],
       },
       action: {
         type: "redirect",
         redirect: {
-          transform: {
-            host: "kagi.com",
-            path: "/search",
-          },
+          regexSubstitution: substitution,
         },
       },
     },
   ];
 }
 
-function getAuthRule(sessionToken) {
-  if (!sessionToken) {
-    return null;
+function getAuthRules(sessionLink) {
+  if (!sessionLink) {
+    return [];
   }
 
-  return {
+  return [{
     condition: {
       requestDomains: ["kagi.com"],
       resourceTypes: ["main_frame"],
@@ -65,20 +66,20 @@ function getAuthRule(sessionToken) {
       requestHeaders: [{
         header: "Authorization",
         operation: "set",
-        value: sessionToken,
+        value: getSessionToken(sessionLink),
       }],
     },
-  };
+  }];
 }
 
 async function reload() {
-  const sessionToken = await getSessionToken();
+  const sessionLink = await getSessionLink();
+  console.log(sessionLink);
+
   const oldRules = await browser.declarativeNetRequest.getDynamicRules();
-  const rules = getRedirectRules();
-  if (sessionToken) {
-    rules.push(getAuthRule(sessionToken));
-  }
+  const rules = getRedirectRules(sessionLink).concat(getAuthRules(sessionLink));
   rules.forEach((rule, index) => rule.id = index + 1);
+  console.log(rules);
 
   await browser.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: oldRules.map(rule => rule.id),
