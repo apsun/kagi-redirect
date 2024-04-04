@@ -5,8 +5,7 @@
   "version": "1.0",
   "permissions": [
     "storage",
-    "declarativeNetRequestWithHostAccess",
-    "webNavigation"
+    "declarativeNetRequestWithHostAccess"
   ],
   "host_permissions": [
     "*://*.google.com/*",

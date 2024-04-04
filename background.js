@@ -21,38 +21,34 @@ function getSearchQueryPattern(key) {
   return "\\?(?:.*&)?" + key + "=([^&]+)"
 }
 
-function getRedirectRules(sessionLink) {
-  // Disabled because Safari is broken beyond repair when it comes to
-  // handling DNR redirects. We use the webNavigation + tabs API instead.
-  return [];
+function getRedirectRules() {
+  // We redirect to a data: URL containing a script and append the query parameter as a fragment.
+  // The script reads the fragment and uses it to build the destination URL.
+  // This works around some horribly broken Safari behavior when handling DNR redirects.
+  const baseUrl = "https://kagi.com/search?q=";
+  const script = `window.location.replace('${baseUrl}' + window.location.hash.substring(1));`;
+  const style = ":root { color-scheme: light dark; }";
+  const substitution = `data:text/html,<style>${style}</style><script>${script}</script>#\\1`;
 
-  const substitution = sessionLink ? sessionLink + "&q=\\1" : "https://kagi.com/search?q=\\1";
-  return [
-    {
-      condition: {
-        regexFilter: "^https://www.google.com/search" + getSearchQueryPattern("q"),
-        resourceTypes: ["main_frame"],
-      },
-      action: {
-        type: "redirect",
-        redirect: {
-          regexSubstitution: substitution,
-        },
-      },
-    },
-    {
-      condition: {
-        regexFilter: "^https://duckduckgo.com/" + getSearchQueryPattern("q"),
-        resourceTypes: ["main_frame"],
-      },
-      action: {
-        type: "redirect",
-        redirect: {
-          regexSubstitution: substitution,
-        },
-      },
-    },
+  // TODO: only match if the query comes from the address bar, so that we don't redirect
+  // !bang searches in a loop
+  const filters = [
+    "^https://www.google.com/search" + getSearchQueryPattern("q"),
+    "^https://duckduckgo.com/" + getSearchQueryPattern("q"),
   ];
+
+  return filters.map((filter) => ({
+    condition: {
+      regexFilter: filter,
+      resourceTypes: ["main_frame"],
+    },
+    action: {
+      type: "redirect",
+      redirect: {
+        regexSubstitution: substitution,
+      },
+    },
+  }));
 }
 
 function getAuthRules(sessionLink) {
@@ -76,33 +72,11 @@ function getAuthRules(sessionLink) {
   }];
 }
 
-function getSearchQuery(urlString) {
-  const url = new URL(urlString)
-  if (url.host == "www.google.com" && url.pathname == "/search") {
-    return url.searchParams.get("q");
-  } else if (url.host == "duckduckgo.com" && url.pathname == "/") {
-    return url.searchParams.get("q");
-  } else {
-    return null;
-  }
-}
-
-async function onBeforeNavigate(details) {
-  const q = getSearchQuery(details.url);
-  if (q) {
-    const url = new URL("https://kagi.com/search");
-    url.searchParams.set("q", q);
-    await browser.tabs.update(details.tabId, {
-      url: url.toString(),
-    });
-  }
-}
-
 async function reloadWebRequestRules() {
   const sessionLink = await getSessionLink();
 
   const oldRules = await browser.declarativeNetRequest.getDynamicRules();
-  const rules = getRedirectRules(sessionLink).concat(getAuthRules(sessionLink));
+  const rules = getRedirectRules().concat(getAuthRules(sessionLink));
   rules.forEach((rule, index) => rule.id = index + 1);
 
   await browser.declarativeNetRequest.updateDynamicRules({
@@ -111,6 +85,5 @@ async function reloadWebRequestRules() {
   });
 }
 
-browser.webNavigation.onBeforeNavigate.addListener(onBeforeNavigate);
 browser.runtime.onInstalled.addListener(reloadWebRequestRules);
 browser.storage.local.onChanged.addListener(reloadWebRequestRules);
