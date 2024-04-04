@@ -1,17 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <link href="options.css" rel="stylesheet">
+    <title>Kagi Redirect</title>
   </head>
   <body>
-    <form name="options-form">
-      <label for="session-link">Session Link</label>
+    <form>
+      <label for="session-link-input">Session Link</label>
       <input
-        type="text"
-        name="session-link"
+        id="session-link-input"
+        type="url"
         placeholder="https://kagi.com/search?token=..."
-        pattern="https://kagi.com/search\?token=[A-Za-z0-9._\-]+"/>
+        pattern="https://kagi.com/search\?token=[A-Za-z0-9._\-]+">
+      <p>
+        To enable search while in Private Browsing, copy the value from
+        Settings &gt; Account &gt; Session Link and paste it here.
+      </p>
     </form>
     <script src="options.js"></script>
   </body>

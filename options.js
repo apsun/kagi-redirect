@@ -4,8 +4,8 @@ if (typeof browser === "undefined") {
 
 async function init() {
   const storageKey = "session-link";
-  const input = document.getElementsByName("session-link")[0];
   const sessionLink = (await browser.storage.local.get(storageKey))[storageKey];
+  const input = document.getElementById("session-link-input");
   input.value = sessionLink || "";
   input.addEventListener("input", async () => {
     if (input.validity.valid) {

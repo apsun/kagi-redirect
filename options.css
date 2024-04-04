@@ -1,4 +1,44 @@
+:root {
+  color-scheme: light dark;
+}
+
+html {
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+body {
+  font-family: -apple-system, sans-serif;
+}
+
+label {
+  display: block;
+  font-size: 20px;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 4px;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 4px;
+  font: inherit;
+}
+
 input:invalid {
-  outline-color: red;
   border-color: red;
+}
+
+input:not(:placeholder-shown):valid {
+  border-color: green;
+}
+
+p {
+  margin: 0;
 }
