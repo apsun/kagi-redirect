@@ -110,6 +110,10 @@ async function onBeforeNavigate(details) {
   }
 }
 
+// iOS likes to wipe our DNR rules sometimes, so reload them as often as possible
+browser.runtime.onStartup.addListener(reloadWebRequestRules);
 browser.runtime.onInstalled.addListener(reloadWebRequestRules);
 browser.storage.local.onChanged.addListener(reloadWebRequestRules);
+reloadWebRequestRules();
+
 browser.webNavigation.onBeforeNavigate.addListener(onBeforeNavigate);
